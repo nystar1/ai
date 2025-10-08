@@ -1,4 +1,4 @@
-use std::{convert::Infallible, net::SocketAddr};
+use std::net::SocketAddr;
 
 use axum::{
     body::{Body, to_bytes},
@@ -7,9 +7,9 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use futures::{StreamExt, stream::unfold};
+use futures::StreamExt;
 use serde_json::{Value, from_slice};
-use tokio::{spawn, sync::mpsc::channel};
+use tokio::spawn;
 use tracing::error;
 
 use crate::{
@@ -118,44 +118,29 @@ pub async fn completions(
     let ip = addr.ip();
 
     if is_streaming {
-        let mut stream = response.bytes_stream();
-        let (tx, rx) = channel(32);
-
-        spawn(async move {
-            let mut usage_data = None;
-
-            while let Some(chunk_result) = stream.next().await {
-                let Ok(chunk) = chunk_result else { break };
-
-                if let Some(json) = String::from_utf8_lossy(&chunk)
-                    .lines()
-                    .find_map(|line| {
-                        line.strip_prefix("data: ")
-                            .filter(|&d| d != "[DONE]")
-                            .and_then(|d| serde_json::from_str::<Value>(d).ok())
-                            .filter(|j| j.get("x_groq").and_then(|x| x.get("usage")).is_some())
-                    })
-                {
-                    usage_data = Some(json);
-                }
-
-                if tx.send(Ok::<_, Infallible>(chunk)).await.is_err() {
-                    break;
+        let stream = response.bytes_stream().map(move |chunk_result| {
+            if let Ok(ref chunk) = chunk_result {
+                if let Some(json) = String::from_utf8_lossy(chunk).lines().find_map(|line| {
+                    line.strip_prefix("data: ")
+                        .filter(|&d| d != "[DONE]")
+                        .and_then(|d| serde_json::from_str::<Value>(d).ok())
+                        .filter(|j| j.get("x_groq").and_then(|x| x.get("usage")).is_some())
+                }) {
+                    let state = state.clone();
+                    let request = request.clone();
+                    let tokens = extract_tokens(&json, true);
+                    spawn(async move {
+                        state.log_request(&request, &json, ip, tokens).await;
+                    });
                 }
             }
-
-            if let Some(final_response) = usage_data {
-                let tokens = extract_tokens(&final_response, true);
-                state.log_request(&request, &final_response, ip, tokens).await;
-            }
+            chunk_result
         });
 
         Ok(Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, content_type)
-            .body(Body::from_stream(unfold(rx, |mut rx| async move {
-                rx.recv().await.map(|chunk| (chunk, rx))
-            })))
+            .body(Body::from_stream(stream))
             .unwrap())
     } else {
         let bytes = response.bytes().await.map_err(|e| {
