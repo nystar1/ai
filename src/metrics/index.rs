@@ -30,86 +30,86 @@ pub async fn index(State(state): State<MetricsState>) -> impl IntoResponse {
         }
     }
 
-    Html(
-        html! {
-            html lang="en" {
-                head {
-                    meta charset="UTF-8" {}
-                    meta name="viewport" content="width=device-width, initial-scale=1.0" {}
-                    title { "Hack Club | AI" }
-                }
-                body {
-                    header {
-                        h1 { "ai.hackclub.com" }
-                        p {
-                            "An experimental service providing unlimited "
-                            code { "/chat/completions" }
-                            " for free, for teens in "
+    Html(html! {
+        (maud::DOCTYPE) // important lol
+        html {
+            head {
+                title { "Hack Club | AI" }
+                script src="https://cdn.tailwindcss.com" {}
+            }
+            body class="bg-black text-white min-h-screen p-6 font-mono" {
+                div class="max-w-4xl mx-auto space-y-8" {
+                    div class="space-y-4" {
+                        h1 class="text-4xl font-bold" { "ai.hackclub.com" }
+                        p class="text-lg" {
+                            "Unlimited "
+                            code class="bg-gray-900 px-2 py-1 rounded text-blue-400" { "/chat/completions" }
+                            " for teens in "
                             a href="https://hackclub.com/" target="_blank" { "Hack Club" }
                             ". No API key needed."
+                            br;
+                            span class="font-semibold" { (total.to_string()) }
+                            " tokens processed since October 2025."
                         }
-                        p {
-                            b { (total) }
-                            " tokens processed since January 2025. Default model: "
-                            b { code { (DEFAULT_MODEL) } }
-                        }
-                        p {
+                        div class="text-sm" {
                             "Available models: "
-                            b {
-                                @for (i, model) in ALLOWED_MODELS.split(',').enumerate() {
-                                    @if i > 0 { ", " }
-                                    code { (model.trim()) }
+                            span class="inline-flex flex-wrap gap-2" {
+                                @for model in ALLOWED_MODELS.split(',') {
+                                    @if model.trim() == DEFAULT_MODEL {
+                                        code class="bg-gray-900 px-2 py-1 rounded text-white" {
+                                            (model.trim()) " " span class="text-blue-400 text-xs" { "default" }
+                                        }
+                                    } @else {
+                                        code class="bg-gray-900 px-2 py-1 rounded text-white" { (model.trim()) }
+                                    }
                                 }
                             }
                         }
-                        p {
-                            "Open source at "
-                            a href="https://github.com/hackclub/ai" { "github.com/hackclub/ai" }
-                            "!"
+                        p class="text-sm" {
+                            "Open source " a href="https://github.com/hackclub/ai" class="text-blue-400" { "here" }
                         }
                     }
-                    section {
-                        h2 { "Usage" }
-                        h3 { "Chat Completions" }
-                        pre {
-                            code {
-                                "curl -X POST https://ai.hackclub.com/chat/completions \\\n"
-                                "    -H \"Content-Type: application/json\" \\\n"
-                                "    -d '{\n"
-                                "        \"messages\": [{\"role\": \"user\", \"content\": \"Tell me a joke!\"}]\n"
-                                "    }'"
+                    div class="space-y-4" {
+                        h2 class="text-2xl font-semibold" { "Usage" }
+                        div class="space-y-3" {
+                            h3 class="text-lg" { "> Chat Completions" }
+                            pre class="bg-gray-900 p-4 rounded overflow-x-auto" {
+                                code class="text-sm" {
+                                    span class="text-white" { "curl" } " "
+                                    span class="text-gray-500" { "-X" } " "
+                                    span class="text-white" { "POST" }
+                                    " https://ai.hackclub.com/chat/completions \\\n  "
+                                    span class="text-gray-500" { "-H" } " "
+                                    span class="text-gray-400" { "\"Content-Type: application/json\"" }
+                                    " \\\n  "
+                                    span class="text-gray-500" { "-d" } " "
+                                    span class="text-gray-400" { "'{\"messages\": [{\"role\": \"user\", \"content\": \"Tell me a joke!\"}]}'" }
+                                }
                             }
                         }
-                        h3 { "Get Current Models" }
-                        p { "To get current models:" }
-                        pre {
-                            code { "curl https://ai.hackclub.com/model" }
-                        }
-                        p {
-                            "Example response: "
-                            code { "qwen/qwen3-32b,openai/gpt-oss-120b,openai/gpt-oss-20b,meta-llama/llama-4-maverick-17b-128e-instruct" }
+                        div class="space-y-3" {
+                            h3 class="text-lg" { "> Get Models" }
+                            pre class="bg-gray-900 p-4 rounded overflow-x-auto" {
+                                code class="text-sm" {
+                                    span class="text-white" { "curl" } " https://ai.hackclub.com/model"
+                                }
+                            }
                         }
                     }
-                    section {
-                        h2 { "Terms" }
+                    div class="space-y-4" {
+                        h2 class="text-2xl font-semibold" { "Terms" }
                         p {
                             "You must be a teenager in the "
                             a href="https://hackclub.com/slack" { "Hack Club Slack" }
-                            ". All requests and responses are logged to prevent abuse. "
-                            "Projects only - no personal use. This means you can't use it in Cursor "
-                            "or anything similar for the moment! Abuse means this will get shut down "
-                            "- we're a nonprofit funded by donations."
+                            ". All requests and responses are logged to prevent abuse. Projects only - no personal use. This means you can't use it in Cursor or anything similar for the moment! Abuse means this will get shut down - we're a nonprofit funded by donations."
                         }
                     }
-                    section {
-                        h2 { "Docs" }
-                        p {
-                            a href="/docs" { "Link" }
-                        }
+                    div class="space-y-4" {
+                        h2 class="text-2xl font-semibold" { "Documentation" }
+                        a href="/docs" class="inline-block px-6 py-3 border border-white" { "View API Docs" }
                     }
                 }
             }
         }
-        .into_string(),
-    )
+    }.into_string())
 }

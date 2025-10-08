@@ -120,15 +120,12 @@ pub async fn completions(
     if is_streaming {
         let stream = response.bytes_stream().map(move |chunk_result| {
             if let Ok(ref chunk) = chunk_result {
-                if let Some(json) = String::from_utf8_lossy(chunk)
-                    .lines()
-                    .find_map(|line| {
-                        line.strip_prefix("data: ")
-                            .filter(|&d| d != "[DONE]")
-                            .and_then(|d| serde_json::from_str::<Value>(d).ok())
-                            .filter(|j| j.get("x_groq").and_then(|x| x.get("usage")).is_some())
-                    })
-                {
+                if let Some(json) = String::from_utf8_lossy(chunk).lines().find_map(|line| {
+                    line.strip_prefix("data: ")
+                        .filter(|&d| d != "[DONE]")
+                        .and_then(|d| serde_json::from_str::<Value>(d).ok())
+                        .filter(|j| j.get("x_groq").and_then(|x| x.get("usage")).is_some())
+                }) {
                     let state = state.clone();
                     let request = request.clone();
                     let tokens = extract_tokens(&json, true);
