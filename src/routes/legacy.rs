@@ -1,4 +1,5 @@
 use axum::response::IntoResponse;
+use crate::ALLOWED_MODELS;
 
 #[utoipa::path(
     get,
@@ -9,7 +10,7 @@ use axum::response::IntoResponse;
     tag = "Legacy"
 )]
 pub async fn get_model() -> impl IntoResponse {
-    crate::ALLOWED_MODELS
+    ALLOWED_MODELS
 }
 
 #[utoipa::path(
@@ -35,3 +36,4 @@ pub async fn echo() -> impl IntoResponse {
 pub async fn manual_hello() -> impl IntoResponse {
     echo().await
 }
+

@@ -8,12 +8,12 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use futures::StreamExt;
-use serde_json::{Value, from_slice};
+use serde_json::{Value, from_slice, json};
 use tokio::spawn;
 use tracing::error;
 
 use crate::{
-    CLIENT, COMPLETIONS_URL, DEFAULT_MODEL,
+    ALLOWED_MODELS, CLIENT, COMPLETIONS_URL, DEFAULT_MODEL,
     delegates::error::APIError,
     is_allowed_model,
     metrics::database::{MetricsState, extract_tokens},
@@ -168,4 +168,24 @@ pub async fn completions(
             .body(Body::from(bytes))
             .unwrap())
     }
+}
+
+#[utoipa::path(
+    get,
+    path = "/models",
+    responses(
+        (status = 200, description = "List of available models", content_type = "application/json")
+    ),
+    tag = "Chat"
+)]
+pub async fn get_models() -> impl IntoResponse {
+    Json(json!({
+        "object": "list",
+        "data": ALLOWED_MODELS.split(',').map(|model| json!({
+            "id": model,
+            "object": "model",
+            "created": 0,
+            "owned_by": "groq"
+        })).collect::<Vec<Value>>()
+    }))
 }
