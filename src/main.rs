@@ -27,7 +27,7 @@ use crate::{
     docs::handlers::{docs, openapi_axle},
     metrics::{database::MetricsState, index::index},
     routes::{
-        completions::{completions, validate_model},
+        completions::{completions, get_models, validate_model},
         legacy::{echo, get_model, manual_hello},
     },
 };
@@ -48,6 +48,7 @@ pub(crate) const COMPLETIONS_URL: &str = dotenv!("COMPLETIONS_URL");
         routes::legacy::get_model,
         routes::legacy::manual_hello,
         routes::completions::completions,
+        routes::completions::get_models,
     ),
     tags(
         (name = "Chat", description = "Chat completion endpoints"),
@@ -106,6 +107,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let chat_router = Router::new()
         .route("/chat/completions", post(completions))
+        .route("/models", get(get_models))
         .layer(middleware::from_fn(validate_model));
 
     let docs_router = Router::new()
