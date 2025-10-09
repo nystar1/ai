@@ -10,3 +10,6 @@ curl -X POST https://ai.hackclub.com/chat/completions \
     -d '{
         "messages": [{"role": "user", "content": "Tell me a joke!"}]
     }'
+
+This project is dual licensed with Apache2 and MIT. 
+Visit https://ai.hackclub.com for more details about the service.
