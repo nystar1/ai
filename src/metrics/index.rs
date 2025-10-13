@@ -39,6 +39,18 @@ pub async fn index(State(state): State<MetricsState>) -> impl IntoResponse {
             }
             body class="bg-black text-white min-h-screen p-6 font-mono" {
                 div class="max-w-4xl mx-auto space-y-8" {
+                    div
+                        role="alert"
+                        aria-live="assertive"
+                        class="rounded-md border border-yellow-500/40 bg-yellow-500/10 text-yellow-300 px-4 py-3"
+                    {
+                        strong class="font-semibold" { "Heads up: " }
+                        span {
+                            "Only teens " b { "18 and under" } " can use this. "
+                            "Please don't steal from a charity. Requests and responses are logged."
+                        }
+                    }
+
                     div class="space-y-4" {
                         h1 class="text-4xl font-bold" { "ai.hackclub.com" }
                         p class="text-lg" {
