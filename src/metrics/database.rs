@@ -61,7 +61,7 @@ impl MetricsState {
         request: &Value,
         response: &Value,
         ip: IpAddr,
-        tokens: Option<i32>,
+        tokens: i32,
     ) {
         if let Some(pool) = &self.db {
             match pool.get().await {
@@ -76,8 +76,8 @@ impl MetricsState {
                         error!("Failed to log request: {}", e);
                     }
 
-                    if let Some(token_count) = tokens {
-                        self.inc_tokens(token_count as i64);
+                    if tokens > 0 {
+                        self.inc_tokens(tokens as i64);
                     }
                 }
                 Err(e) => {
@@ -88,12 +88,18 @@ impl MetricsState {
     }
 }
 
-pub fn extract_tokens(response: &Value, is_streaming: bool) -> Option<i32> {
+pub fn extract_tokens(response: &Value, is_streaming: bool) -> i32 {
     let usage = if is_streaming {
-        response.get("x_groq")?.get("usage")?
+        response
+            .get("x_groq")
+            .and_then(|meta| meta.get("usage"))
     } else {
-        response.get("usage")?
+        response.get("usage")
     };
 
-    usage.get("total_tokens")?.as_i64().map(|t| t as i32)
+    usage
+        .and_then(|data| data.get("total_tokens"))
+        .and_then(Value::as_i64)
+        .map(|raw| raw.clamp(0, i64::from(i32::MAX)) as i32)
+        .unwrap_or(0)
 }

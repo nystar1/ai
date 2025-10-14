@@ -1,9 +1,9 @@
-use std::net::SocketAddr;
+use std::net::IpAddr;
 
 use axum::{
     body::{Body, to_bytes},
-    extract::{ConnectInfo, Json, Request, State},
-    http::{Method, StatusCode, header},
+    extract::{Json, Request, State},
+    http::{HeaderMap, Method, StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
 };
@@ -81,7 +81,7 @@ pub async fn validate_model(req: Request, next: Next) -> Result<Response, APIErr
 )]
 pub async fn completions(
     State(state): State<MetricsState>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     Json(request): Json<Value>,
 ) -> impl IntoResponse {
     let response = CLIENT
@@ -115,7 +115,12 @@ pub async fn completions(
         .and_then(Value::as_bool)
         .unwrap_or(false);
 
-    let ip = addr.ip();
+    let ip = headers
+        .get("X-Forwarded-For")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .and_then(|s| s.trim().parse::<IpAddr>().ok())
+        .unwrap_or_else(|| "127.0.0.1".parse().unwrap());
 
     if is_streaming {
         let stream = response.bytes_stream().map(move |chunk_result| {
@@ -179,13 +184,15 @@ pub async fn completions(
     tag = "Chat"
 )]
 pub async fn get_models() -> impl IntoResponse {
-    Json(json!({
+    let payload = json!({
         "object": "list",
         "data": ALLOWED_MODELS.split(',').map(|model| json!({
-            "id": model,
+            "id": model.trim(),
             "object": "model",
             "created": 0,
             "owned_by": "groq"
         })).collect::<Vec<Value>>()
-    }))
+    });
+
+    Json(payload)
 }

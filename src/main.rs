@@ -106,9 +106,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     LazyLock::force(&CLIENT);
 
     let chat_router = Router::new()
-        .route("/chat/completions", post(completions))
-        .route("/models", get(get_models))
-        .layer(middleware::from_fn(validate_model));
+        .route("/chat/completions", post(completions).layer(middleware::from_fn(validate_model)))
+        .route("/models", get(get_models));
 
     let docs_router = Router::new()
         .route("/docs", get(docs))
